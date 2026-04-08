@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +27,7 @@ SECRET_KEY = 'django-insecure-jl5$9ce4kcc_2i_(ke^(oz%=@c8^4*5c(v$2pp+xh663q-$md^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1', '.onrender.com', '*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1', '.onrender.com', 'api-inventario-ekw9.onrender.com', '*']
 
 
 # Application definition
@@ -83,17 +85,10 @@ WSGI_APPLICATION = 'sistema_ventas.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ventas_inventario_db',  # El nombre de la base de datos que crearemos
-        'USER': 'postgres',              # Tu usuario (normalmente es postgres)
-        'PASSWORD':'1234',     
-        'HOST': 'localhost',
-        'PORT': '5432',
-        'OPTIONS': {
-            'client_encoding': 'LATIN1',
-        },
-    }
+    'default': dj_database_url.config(
+        default='postgres://postgres:1234@localhost:5432/ventas_inventario_db',
+        conn_max_age=600
+    )
 }
 
 # Password validation
