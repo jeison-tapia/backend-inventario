@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "C:\Users\INVESTIGACION\OneDrive - Escuela de Formacion de Infantería de Marina\PROYECTOS\proyecto_inventario\test_dev.py", line 22, in <module>
+    d = DetalleTransaccion.objects.create(
+        transaccion=devolucion,
+        producto=item.producto,
+        cantidad=1,
+    )
+  File "C:\Users\INVESTIGACION\OneDrive - Escuela de Formacion de Infantería de Marina\PROYECTOS\proyecto_inventario\venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\INVESTIGACION\OneDrive - Escuela de Formacion de Infantería de Marina\PROYECTOS\proyecto_inventario\venv\Lib\site-packages\django\db\models\query.py", line 669, in create
+    obj.save(force_insert=True, using=self.db)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\INVESTIGACION\OneDrive - Escuela de Formacion de Infantería de Marina\PROYECTOS\proyecto_inventario\inventario\models.py", line 257, in save
+    self.subtotal_linea = self.cantidad * self.precio_historico_venta * descuento_factor
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for *: 'decimal.Decimal' and 'float'
