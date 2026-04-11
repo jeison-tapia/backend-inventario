@@ -77,7 +77,7 @@ class IsVendedorUser(permissions.BasePermission):
 class IsClienteUser(permissions.BasePermission):
     """Permite acceso exclusivo a clientes que consumen la tienda"""
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.rol == 'CLIENTE')
+        return bool(request.user and request.user.is_authenticated and request.user.rol == 'CLIENTE_FINAL')
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     """

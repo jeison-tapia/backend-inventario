@@ -27,7 +27,7 @@ class PaginacionEstandar(PageNumberPagination):
     """Paginador por defecto para listas grandes"""
     page_size = 10
     page_size_query_param = 'page_size'
-    max_page_size = 100
+    max_page_size = 1000
 
 class PlanViewSet(viewsets.ModelViewSet):
     queryset = Plan.objects.all()
@@ -277,6 +277,7 @@ class TransaccionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def devolucion_parcial(self, request, pk=None):
         """[Hito 6] Crea una devolución parcial de ítems de una venta"""
+        from rest_framework import status as drf_status
         venta_original = self.get_object()
         if venta_original.tipo_documento != 'VENTA' or venta_original.estado != 'EMITIDA':
             return Response({'error': 'Solo se puede devolver de una venta emitida.'}, status=400)
@@ -291,23 +292,33 @@ class TransaccionViewSet(viewsets.ModelViewSet):
             cliente=venta_original.cliente,
             bodega=venta_original.bodega,
             transaccion_origen=venta_original,
+            empresa=venta_original.empresa,
             observaciones=f'Devolución parcial de {venta_original.numero_documento}',
         )
 
-        # Copiar detalles devueltos
-        for dv in detalles_validados:
+        # Insertar los ítems que el usuario quiere devolver
+        for item in items:
+            producto_id = item.get('producto_id')
+            cantidad = float(item.get('cantidad', 0))
+            if not producto_id or cantidad <= 0:
+                continue
+            # Verificar que el producto existe en la venta original
+            detalle_orig = venta_original.detalles.filter(producto_id=producto_id).first()
+            if not detalle_orig:
+                continue
+            # No puede devolver más de lo comprado
+            cantidad = min(cantidad, float(detalle_orig.cantidad))
             DetalleTransaccion.objects.create(
                 transaccion=devolucion,
-                producto_id=dv['producto_id'],
-                cantidad=dv['cantidad_devolver'],
-                precio_unitario=dv['detalle_original'].precio_unitario, # Se devuelve al mismo precio
-                descuento_porcentaje=dv['detalle_original'].descuento_porcentaje
+                producto_id=producto_id,
+                cantidad=cantidad,
+                descuento_porcentaje=detalle_orig.descuento_porcentaje
             )
-            
+
         devolucion.estado = 'EMITIDA'
         devolucion.save()
-        
-        return Response(TransaccionSerializer(devolucion).data, status=status.HTTP_201_CREATED)
+
+        return Response(TransaccionSerializer(devolucion).data, status=drf_status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def enviar_correo(self, request, pk=None):
@@ -325,9 +336,11 @@ class TransaccionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def rentabilidad(self, request):
         """[Hito 6] Reporte de margen bruto por período"""
-        if not request.user.is_superuser and (not request.user.plan or not request.user.plan.puede_ver_reportes):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Su plan no permite ver reportes de rentabilidad.")
+        if not request.user.is_superuser:
+            empresa = getattr(request.user, 'empresa', None)
+            if not empresa or not empresa.plan.modulo_reportes:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("Su plan no permite ver reportes de rentabilidad.")
 
         fecha_inicio = request.query_params.get('fecha_inicio')
         fecha_fin = request.query_params.get('fecha_fin')
@@ -354,9 +367,11 @@ class TransaccionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def exportar_excel(self, request):
-        if not request.user.is_superuser and (not request.user.plan or not request.user.plan.puede_ver_reportes):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Su plan no permite exportar reportes.")
+        if not request.user.is_superuser:
+            empresa = getattr(request.user, 'empresa', None)
+            if not empresa or not empresa.plan.modulo_reportes:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("Su plan no permite exportar reportes.")
 
         fecha_inicio = request.query_params.get('fecha_inicio')
         fecha_fin = request.query_params.get('fecha_fin')
@@ -385,9 +400,11 @@ class TransaccionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def exportar_pdf(self, request):
-        if not request.user.is_superuser and (not request.user.plan or not request.user.plan.puede_ver_reportes):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Su plan no permite exportar reportes.")
+        if not request.user.is_superuser:
+            empresa = getattr(request.user, 'empresa', None)
+            if not empresa or not empresa.plan.modulo_reportes:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("Su plan no permite exportar reportes.")
 
         fecha_inicio = request.query_params.get('fecha_inicio')
         fecha_fin = request.query_params.get('fecha_fin')
